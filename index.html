@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Company Landing Page</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+body,h1,h2,h3,h4,h5,h6 {font-family:"Oswald", sans-serif}
+body {font-family: "Open Sans", sans-serif; margin:0; padding:0;}
+
+/* Full screen header with crisp background image */
+.header {
+  background-image: url('https://via.placeholder.com/1600x800'); /* Replace with your image */
+  background-size: cover;       /* Fully covers container */
+  background-position: center;  /* Center the image */
+  background-repeat: no-repeat; /* Prevent tiling */
+  height: 100vh;                /* Full viewport height */
+  position: relative;
+  color: white;
+}
+
+/* Overlay to make text readable */
+.header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3); /* Slight dark overlay */
+  z-index: 1;
+}
+
+.header-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 2; /* Above overlay */
+}
+
+.header-text h1 {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.header-text p {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+}
+
+/* Chatbot styles */
+.chat-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 350px;
+  max-width: 90%;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.chat-header {
+  background-color: #007BFF;
+  color: white;
+  padding: 12px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.chat-messages {
+  padding: 10px;
+  height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message {
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.message.bot {
+  background-color: #f1f0f0;
+  align-self: flex-start;
+}
+
+.message.user {
+  background-color: #007BFF;
+  color: white;
+  align-self: flex-end;
+}
+
+.chat-input {
+  display: flex;
+  border-top: 1px solid #ddd;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  outline: none;
+}
+
+.chat-input button {
+  padding: 10px;
+  background-color: #007BFF;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.chat-input button:hover {
+  background-color: #0056b3;
+}
+</style>
+</head>
+<body class="w3-light-grey">
+
+<!-- Navigation Bar -->
+<div class="w3-bar w3-black w3-card">
+  <a href="#home" class="w3-bar-item w3-button w3-padding-large">HOME</a>
+  <a href="#register" class="w3-bar-item w3-button w3-padding-large">REGISTER</a>
+  <a href="#login" class="w3-bar-item w3-button w3-padding-large">LOGIN</a>
+  <a href="#about" class="w3-bar-item w3-button w3-padding-large">ABOUT</a>
+  <a href="#" class="w3-bar-item w3-button w3-padding-large w3-right"><i class="fa fa-search"></i></a>
+</div>
+
+<!-- Header Section -->
+<header class="header w3-display-container" id="home">
+  <div class="header-text">
+    <h1>Welcome to Our Company</h1>
+    <p>Automated Customer Service at Your Fingertips</p>
+    <button class="w3-button w3-white w3-padding-large w3-hover-opacity" onclick="document.getElementById('subscribe').style.display='block'">Subscribe</button>
+  </div>
+</header>
+
+<!-- Main Content -->
+<div class="w3-content w3-padding" style="max-width:1200px">
+  <h2 id="about" class="w3-center w3-padding-32">About Our Company</h2>
+  <p class="w3-center">We provide top-notch services to our clients. Our automated customer service bot ensures you get help anytime, instantly.</p>
+
+  <div class="w3-row-padding w3-padding-32">
+    <div class="w3-col l6 s12">
+      <img src="https://via.placeholder.com/600x400" style="width:100%">
+    </div>
+    <div class="w3-col l6 s12 w3-center">
+      <h3>Why Choose Us?</h3>
+      <p>Fast, reliable, and automated customer support. Always available to answer your questions.</p>
+      <ul class="w3-ul w3-left-align w3-white w3-padding">
+        <li>24/7 Customer Support</li>
+        <li>AI-Powered Bot</li>
+        <li>Easy Registration & Login</li>
+        <li>Responsive Design</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Chatbot -->
+<div class="chat-container">
+  <div class="chat-header">Customer Service</div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="message bot">Hello! How may I help you today?</div>
+  </div>
+  <div class="chat-input">
+    <input type="text" id="userInput" placeholder="Type your message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<!-- Subscribe Modal -->
+<div id="subscribe" class="w3-modal w3-animate-opacity">
+  <div class="w3-modal-content w3-padding-32">
+    <div class="w3-container w3-white">
+      <i onclick="document.getElementById('subscribe').style.display='none'" class="fa fa-remove w3-button w3-xlarge w3-right"></i>
+      <h2 class="w3-wide">SUBSCRIBE</h2>
+      <p>Enter your email to get updates!</p>
+      <input class="w3-input w3-border" type="text" placeholder="Enter e-mail">
+      <button class="w3-button w3-block w3-red w3-margin-top" onclick="document.getElementById('subscribe').style.display='none'">Subscribe</button>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="w3-container w3-dark-grey w3-padding-32 w3-center">
+  <a href="#home" class="w3-button w3-black w3-margin-bottom"><i class="fa fa-arrow-up w3-margin-right"></i>To the top</a>
+  <p>Powered by W3.CSS</p>
+</footer>
+
+<script>
+// Chatbot JS
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const message = input.value.trim();
+  if (!message) return;
+
+  appendMessage('user', message);
+  input.value = '';
+
+  try {
+    const response = await fetch('https://your-backend-api.com/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message})
+    });
+    const data = await response.json();
+    appendMessage('bot', data.reply || "Sorry, I didn't understand that.");
+  } catch(err) {
+    appendMessage('bot', 'Oops! Something went wrong.');
+  }
+}
+
+function appendMessage(sender, text) {
+  const chatMessages = document.getElementById('chatMessages');
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `message ${sender}`;
+  msgDiv.textContent = text;
+  chatMessages.appendChild(msgDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+</script>
+
+</body>
+</html>
