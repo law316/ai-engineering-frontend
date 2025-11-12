@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width" />
+<title>Semibill AI Assistant</title>
+
+<style>
+:root {
+  --bg: #0f0f1a;
+  --card: rgba(255,255,255,0.12);
+  --text: #fff;
+  --user: #4e54ff;
+  --bot: rgba(255,255,255,0.2);
+}
+.light {
+  --bg: #f2f3fa;
+  --card: #ffffffcc;
+  --text: #111;
+  --user: #5a5fff;
+  --bot: #e8e8ff;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; font-family:Poppins,sans-serif; }
+body {
+  background: var(--bg);
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  transition:0.3s;
+}
+
+/* BACKGROUND FLOATING SHAPES */
+.circle {
+  position:absolute;
+  border-radius:50%;
+  opacity:0.2;
+  animation:float 10s infinite ease-in-out;
+}
+@keyframes float {
+  0%{transform:translateY(0)} 50%{transform:translateY(-25px)} 100%{transform:translateY(0)}
+}
+.circle:nth-child(1){width:180px;height:180px;background:#4e54ff;top:-40px;left:-40px}
+.circle:nth-child(2){width:300px;height:300px;background:#8f94fb;bottom:-70px;right:-70px;animation-duration:12s}
+.circle:nth-child(3){width:120px;height:120px;background:#b3b7ff;top:30%;right:15%;animation-duration:8s}
+
+.chat-container {
+  width:380px;height:620px;
+  background:var(--card);
+  backdrop-filter:blur(14px);
+  border-radius:22px;
+  display:flex;
+  flex-direction:column;
+  padding:14px;
+  z-index:2;
+  border:1px solid rgba(255,255,255,0.2);
+  box-shadow:0 0 40px rgba(0,0,0,0.25);
+  transition:0.3s;
+}
+
+.header {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:10px; color:var(--text);
+}
+h2{font-size:18px;}
+
+#toggleTheme {
+  background:none; border:none; font-size:18px; cursor:pointer;
+}
+
+.chat-box {
+  flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:5px;
+}
+.chat-box::-webkit-scrollbar{width:4px}
+.chat-box::-webkit-scrollbar-thumb{background:#8f94fb;border-radius:4px}
+
+.msg {
+  max-width:80%; padding:12px 14px; border-radius:14px; font-size:14px;
+  position:relative; animation:fadeIn 0.2s ease;
+}
+@keyframes fadeIn {from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.user{background:var(--user);color:#fff;align-self:flex-end}
+.bot{background:var(--bot);color:var(--text);align-self:flex-start}
+
+.time {
+  font-size:10px; opacity:0.7; margin-top:3px;
+}
+
+.input-area{display:flex;margin-top:10px}
+input {
+  flex:1;padding:12px;border:none;border-radius:10px;outline:none;
+  font-size:14px;background:var(--bot);color:var(--text)
+}
+button {
+  background:var(--user);border:none;color:#fff;padding:12px 16px;
+  margin-left:6px;border-radius:10px;cursor:pointer;
+}
+
+.typing {
+  font-size:13px; opacity:0.7; font-style:italic;
+  margin-left:6px; color:var(--text);
+  animation:pulse 1.4s infinite
+}
+@keyframes pulse{0%{opacity:.3}50%{opacity:1}100%{opacity:.3}}
+
+.spinner {
+  border:3px solid rgba(255,255,255,0.3);
+  border-top:3px solid var(--user);
+  border-radius:50%;
+  width:18px;height:18px;
+  animation:spin .6s linear infinite;
+  display:inline-block; margin-right:8px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+
+<body>
+
+<div class="circle"></div><div class="circle"></div><div class="circle"></div>
+
+<div class="chat-container">
+  <div class="header">
+    <h2>Semibill Support 💬</h2>
+    <button id="toggleTheme">🌙</button>
+  </div>
+
+  <div id="chatBox" class="chat-box"></div>
+
+  <div id="typing" class="typing" style="display:none">Bot is typing...</div>
+
+  <div class="input-area">
+    <input id="userInput" placeholder="Ask about rates, deposits, withdrawals..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<audio id="sendSound" src="https://www.fesliyanstudios.com/play-mp3/6868"></audio>
+<audio id="receiveSound" src="https://www.fesliyanstudios.com/play-mp3/6954"></audio>
+
+<script>
+const chatBox = document.getElementById("chatBox");
+const input = document.getElementById("userInput");
+const typing = document.getElementById("typing");
+const sendSound = document.getElementById("sendSound");
+const receiveSound = document.getElementById("receiveSound");
+
+document.getElementById("toggleTheme").onclick = () => {
+  document.body.classList.toggle("light");
+  localStorage.setItem("theme", document.body.classList.contains("light") ? "light" : "dark");
+};
+
+if(localStorage.getItem("theme") === "light") document.body.classList.add("light");
+
+function time() {
+  return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+function addMessage(msg, type) {
+  const div = document.createElement("div");
+  div.className = "msg " + type;
+  div.innerHTML = `${msg}<div class="time">${time()}</div>`;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+async function sendMessage() {
+  const msg = input.value.trim();
+  if(!msg) return;
+
+  addMessage(msg, "user");
+  sendSound.play();
+  input.value = "";
+
+  typing.style.display = "block";
+
+  addMessage(`<span class="spinner"></span>`, "bot");
+
+  try {
+    const res = await fetch("https://aiengineerpractice.fly.dev/prompt", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(msg)
+    });
+
+    const reply = await res.text();
+    document.querySelector(".spinner").parentElement.remove();
+    typing.style.display = "none";
+    addMessage(reply, "bot");
+    receiveSound.play();
+
+    saveHistory();
+  } catch {
+    typing.style.display = "none";
+    addMessage("❌ Failed to connect to AI service.", "bot");
+  }
+}
+
+input.addEventListener("keydown", e => e.key === "Enter" && sendMessage());
+
+function saveHistory() {
+  localStorage.setItem("chat", chatBox.innerHTML);
+}
+
+function loadHistory() {
+  const h = localStorage.getItem("chat");
+  if(h) chatBox.innerHTML = h;
+}
+loadHistory();
+</script>
+
+</body>
+</html>
