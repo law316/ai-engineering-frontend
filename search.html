@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Search Products | RAG System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    body { font-family: Arial, sans-serif; background: #eef2f7; padding: 20px; }
+    .container { max-width: 700px; margin: auto; }
+    h2 { text-align: center; color: #333; }
+    input {
+        width: 100%; padding: 12px; font-size: 16px;
+        margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;
+    }
+    button {
+        width: 100%; padding: 12px; background: #28a745;
+        color: white; border: none; border-radius: 5px;
+        font-size: 16px; cursor: pointer;
+    }
+    button:hover { background: #1d7e34; }
+    .result-card {
+        background: white; padding: 15px; margin-top: 15px;
+        border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .price { color: #007bff; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <h2>Search Products</h2>
+
+    <input type="text" id="query" placeholder="Search for something... e.g. 'cheap phone'">
+
+    <button onclick="searchProduct()">Search</button>
+
+    <div id="results"></div>
+</div>
+
+<script>
+async function searchProduct() {
+    const q = document.getElementById("query").value.trim();
+
+    if (!q) return alert("Enter search text!");
+
+    document.getElementById("results").innerHTML = "Searching...";
+
+    const url = `https://aiengineerpractice.fly.dev/api/rag/search?query=${encodeURIComponent(q)}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.length) {
+            document.getElementById("results").innerHTML = "<p>No results found.</p>";
+            return;
+        }
+
+        let html = "";
+
+        data.forEach(item => {
+            html += `
+            <div class="result-card">
+                <h3>${item.productName}</h3>
+                <p>${item.productDescription}</p>
+                <p class="price">$${item.productPrice}</p>
+            </div>
+            `;
+        });
+
+        document.getElementById("results").innerHTML = html;
+
+    } catch (err) {
+        document.getElementById("results").innerHTML = "<p>Error fetching results.</p>";
+    }
+}
+</script>
+
+</body>
+</html>
