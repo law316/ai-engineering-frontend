@@ -1,97 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Search Products | RAG System</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
+  <meta charset="UTF-8">
+  <title>Search Products | RAG System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
     body { font-family: Arial, sans-serif; background: #eef2f7; padding: 20px; }
     .container { max-width: 700px; margin: auto; }
     h2 { text-align: center; color: #333; }
     input {
-        width: 100%; padding: 12px; font-size: 16px;
-        margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;
+      width: 100%; padding: 12px; font-size: 16px;
+      margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;
     }
     button {
-        width: 100%; padding: 12px; background: #28a745;
-        color: white; border: none; border-radius: 5px;
-        font-size: 16px; cursor: pointer;
+      width: 100%; padding: 12px; background: #28a745;
+      color: white; border: none; border-radius: 5px;
+      font-size: 16px; cursor: pointer;
     }
     button:hover { background: #1d7e34; }
     .result-card {
-        background: white; padding: 15px; margin-top: 15px;
-        border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      background: white; padding: 15px; margin-top: 15px;
+      border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .price { color: #007bff; font-weight: bold; }
-</style>
+  </style>
 </head>
 <body>
 
 <div class="container">
+  <h2>Search Products</h2>
 
-    <h2>Search Products</h2>
+  <input type="text" id="query" placeholder="Search for something... e.g. 'cheap phone'">
 
-    <input type="text" id="query" placeholder="Search for something... e.g. 'cheap phone'">
+  <button onclick="searchProduct()">Search</button>
 
-    <button onclick="searchProduct()">Search</button>
-
-    <div id="results"></div>
+  <div id="results"></div>
 </div>
 
 <script>
-async function searchProduct() {
+  function searchProduct() {
     const q = document.getElementById("query").value.trim();
+    const resultsDiv = document.getElementById("results");
 
     if (!q) {
-        alert("Enter search text!");
-        return;
+      alert("Enter search text!");
+      return;
     }
 
-    const resultsDiv = document.getElementById("results");
     resultsDiv.innerHTML = "Searching...";
 
-    try {
-        // IMPORTANT: match @GetMapping + @RequestBody String query
-        const response = await fetch("https://aiengineerpractice.fly.dev/api/rag/search", {
-            method: "GET",
-            headers: {
-                "Content-Type": "text/plain"
-            },
-            body: q   // <--- raw text body, this becomes @RequestBody String query
-        });
+    // 🔹 Build URL with full natural text as query param
+    const url = "https://aiengineerpractice.fly.dev/api/rag/search?query=" + encodeURIComponent(q);
 
-        const data = await response.json().catch(() => null);
+    // 🔹 Use XMLHttpRequest instead of fetch to avoid the GET+body bug
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
 
-        if (!response.ok) {
-            const msg = data && data.error ? data.error : "Request failed";
-            resultsDiv.innerHTML = `<p>Error: ${msg}</p>`;
-            return;
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+
+            if (!Array.isArray(data) || data.length === 0) {
+              resultsDiv.innerHTML = "<p>No results found.</p>";
+              return;
+            }
+
+            let html = "";
+            data.forEach(function (item) {
+              html += `
+                <div class="result-card">
+                  <h3>${item.productName}</h3>
+                  <p>${item.productDescription}</p>
+                  <p class="price">$${item.productPrice}</p>
+                </div>
+              `;
+            });
+
+            resultsDiv.innerHTML = html;
+          } catch (e) {
+            console.error("JSON parse error:", e);
+            resultsDiv.innerHTML = "<p>Error reading server response.</p>";
+          }
+        } else {
+          console.error("Server error:", xhr.status, xhr.responseText);
+          resultsDiv.innerHTML = "<p>Server error: " + xhr.status + "</p>";
         }
+      }
+    };
 
-        if (!Array.isArray(data) || data.length === 0) {
-            resultsDiv.innerHTML = "<p>No results found.</p>";
-            return;
-        }
-
-        let html = "";
-
-        data.forEach(item => {
-            html += `
-            <div class="result-card">
-                <h3>${item.productName}</h3>
-                <p>${item.productDescription}</p>
-                <p class="price">$${item.productPrice}</p>
-            </div>
-            `;
-        });
-
-        resultsDiv.innerHTML = html;
-
-    } catch (err) {
-        console.error(err);
-        resultsDiv.innerHTML = "<p>Error fetching results.</p>";
-    }
-}
+    // 🔹 GET request → send with NO body
+    xhr.send(null);
+  }
 </script>
 
 </body>
