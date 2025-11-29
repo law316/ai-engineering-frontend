@@ -101,21 +101,56 @@ body {font-family: "Open Sans", sans-serif; margin:0; padding:0;}
   opacity: 0.7;
 }
 
-.chat-input { display: flex; border-top: 1px solid #ddd; }
+.chat-input { 
+  display: flex; 
+  border-top: 1px solid #ddd; 
+}
+
 .chat-input input {
   flex: 1;
   padding: 12px;
   border: none;
   outline: none;
 }
-.chat-input button {
+
+/* Send button style */
+.chat-send-btn {
   padding: 12px;
   background: #007BFF;
   border: none;
   color: white;
   cursor: pointer;
 }
-.chat-input button:hover { background: #0056b3; }
+.chat-send-btn:hover { background: #0056b3; }
+
+/* Mic button style */
+.mic-btn {
+  border: none;
+  background: #f1f5f9;
+  padding: 0 10px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #ddd;
+}
+
+.mic-btn:hover {
+  background: #e2e8f0;
+}
+
+.mic-btn.recording {
+  background: #ef4444;
+  color: #fff;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
 
 /* ===== AI STUDIO SECTION ===== */
 .ai-section {
@@ -417,9 +452,13 @@ body {font-family: "Open Sans", sans-serif; margin:0; padding:0;}
   </div>
 
   <div class="chat-input">
+    <button id="micBtn" type="button" class="mic-btn" title="Click to record">
+      🎤
+    </button>
     <input type="text" id="userInput" placeholder="Type your message..." />
-    <button onclick="sendMessage()">Send</button>
+    <button type="button" class="chat-send-btn" onclick="sendMessage()">Send</button>
   </div>
+  <div id="voiceStatus" style="font-size:12px; padding:4px 10px; color:#555;"></div>
 </div>
 
 <!-- Subscribe Modal -->
@@ -587,6 +626,111 @@ descBtn.addEventListener("click", async () => {
     descStatus.className = "ai-status err";
   } finally {
     descBtn.disabled = false;
+  }
+});
+
+/* ========== Voice Input (Speech to Text) ========== */
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+const micBtn = document.getElementById("micBtn");
+const voiceStatus = document.getElementById("voiceStatus");
+const userInput = document.getElementById("userInput");
+
+async function startRecording() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Microphone not supported in this browser.");
+      return;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        audioChunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      // Stop all tracks (release mic)
+      stream.getTracks().forEach((t) => t.stop());
+
+      const blob = new Blob(audioChunks, { type: "audio/webm" });
+      await sendAudioToBackend(blob);
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+
+    micBtn.classList.add("recording");
+    micBtn.textContent = "◼"; // stop icon
+    if (voiceStatus) voiceStatus.textContent = "Recording... click again to stop.";
+
+  } catch (err) {
+    console.error("Error accessing mic:", err);
+    alert("Could not access microphone. Please check permissions.");
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stop();
+    isRecording = false;
+    micBtn.classList.remove("recording");
+    micBtn.textContent = "🎤";
+    if (voiceStatus) voiceStatus.textContent = "Processing audio...";
+  }
+}
+
+async function sendAudioToBackend(blob) {
+  try {
+    const formData = new FormData();
+    formData.append("file", blob, "voice.webm");
+
+    // Backend endpoint: @PostMapping("/speech-to-text")
+    const res = await fetch(BASE_URL + "/speech-to-text", {
+      method: "POST",
+      body: formData,
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      console.error("Speech-to-text error:", text);
+      if (voiceStatus) voiceStatus.textContent = "Transcription failed.";
+      appendMessage("bot", "Sorry, I couldn't understand that audio.");
+      return;
+    }
+
+    if (voiceStatus) voiceStatus.textContent = "Transcription ready.";
+
+    // Put transcript into the input box
+    userInput.value = text;
+
+    // If you want auto-send, uncomment these:
+    // appendMessage("user", text);
+    // const original = userInput.value;
+    // userInput.value = text;
+    // await sendMessage();
+    // userInput.value = "";
+  } catch (err) {
+    console.error("Network error:", err);
+    if (voiceStatus) voiceStatus.textContent = "Network error.";
+    appendMessage("bot", "Network error during voice transcription.");
+  }
+}
+
+// Toggle recording when mic is clicked
+micBtn.addEventListener("click", () => {
+  if (!isRecording) {
+    startRecording();
+  } else {
+    stopRecording();
   }
 });
 </script>
