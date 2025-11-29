@@ -692,8 +692,8 @@ async function sendAudioToBackend(blob) {
     const formData = new FormData();
     formData.append("file", blob, "voice.webm");
 
-    // Backend endpoint: @PostMapping("/speech-to-text")
-    const res = await fetch(BASE_URL + "/speech-to-text", {
+    // matches @RequestMapping("/api/audio") + @PostMapping("/speech-to-text")
+    const res = await fetch(BASE_URL + "/api/audio/speech-to-text", {
       method: "POST",
       body: formData,
     });
@@ -712,16 +712,45 @@ async function sendAudioToBackend(blob) {
     // Put transcript into the input box
     userInput.value = text;
 
-    // If you want auto-send, uncomment these:
+    // Optional: auto-send the message
     // appendMessage("user", text);
-    // const original = userInput.value;
-    // userInput.value = text;
-    // await sendMessage();
-    // userInput.value = "";
+    // await sendMessageFromText(text);
+
   } catch (err) {
     console.error("Network error:", err);
     if (voiceStatus) voiceStatus.textContent = "Network error.";
     appendMessage("bot", "Network error during voice transcription.");
+  }
+}
+
+// Optional helper if you want to auto-send transcript
+async function sendMessageFromText(message) {
+  appendMessage("user", message);
+
+  const typing = document.createElement("div");
+  typing.className = "message bot typing";
+  typing.textContent = "Customer Service is typing...";
+  document.getElementById("chatMessages").appendChild(typing);
+
+  try {
+    const response = await fetch(BASE_URL + "/api/chats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message),
+    });
+
+    typing.remove();
+
+    if (!response.ok) {
+      appendMessage("bot", "Server error. Please try again.");
+      return;
+    }
+
+    const reply = await response.text();
+    appendMessage("bot", reply);
+  } catch (err) {
+    typing.remove();
+    appendMessage("bot", "Oops! Something went wrong.");
   }
 }
 
