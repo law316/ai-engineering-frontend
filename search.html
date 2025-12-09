@@ -23,6 +23,8 @@
       border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .price { color: #007bff; font-weight: bold; }
+    .ai-card h3 { margin-top: 0; }
+    .ai-card { border-left: 4px solid #28a745; }
   </style>
 </head>
 <body>
@@ -49,10 +51,9 @@
 
     resultsDiv.innerHTML = "Searching...";
 
-    // 🔹 Build URL with full natural text as query param
+    // Backend endpoint
     const url = "https://aiengineerpractice.fly.dev/api/rag/search?query=" + encodeURIComponent(q);
 
-    // 🔹 Use XMLHttpRequest instead of fetch to avoid the GET+body bug
     const xhr = new XMLHttpRequest();
     xhr.open("GET", url, true);
 
@@ -62,13 +63,30 @@
           try {
             const data = JSON.parse(xhr.responseText);
 
-            if (!Array.isArray(data) || data.length === 0) {
-              resultsDiv.innerHTML = "<p>No results found.</p>";
+            // New response shape: { results: [...], aiResponse: "..." }
+            const products = Array.isArray(data.results) ? data.results : [];
+            const aiResponse = data.aiResponse || "";
+
+            let html = "";
+
+            // Show AI summary card (if available)
+            if (aiResponse) {
+              html += `
+                <div class="result-card ai-card">
+                  <h3>Summary</h3>
+                  <p>${aiResponse}</p>
+                </div>
+              `;
+            }
+
+            if (products.length === 0) {
+              html += "<p>No results found.</p>";
+              resultsDiv.innerHTML = html;
               return;
             }
 
-            let html = "";
-            data.forEach(function (item) {
+            // Render product cards
+            products.forEach(function (item) {
               html += `
                 <div class="result-card">
                   <h3>${item.productName}</h3>
@@ -90,7 +108,7 @@
       }
     };
 
-    // 🔹 GET request → send with NO body
+    // GET request → no body
     xhr.send(null);
   }
 </script>
